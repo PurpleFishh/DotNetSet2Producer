@@ -1,9 +1,8 @@
 ﻿using Generator.Generators;
 using Generator.Generators.ValueGenerator;
 using Generator.Random;
-using Producer.Generator;
 
-namespace Producer.CarDataGenerator.Generators;
+namespace Producer.Generators;
 
 public static class FuelPctGenerator
 {

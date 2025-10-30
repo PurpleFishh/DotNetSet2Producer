@@ -1,8 +1,7 @@
 ﻿using Generator.Generators;
 using Generator.Generators.Helper;
-using Producer.Generator;
 
-namespace Producer.CarDataGenerator.Generators;
+namespace Producer.Generators;
 
 public static class EngineStatusGenerator
 {

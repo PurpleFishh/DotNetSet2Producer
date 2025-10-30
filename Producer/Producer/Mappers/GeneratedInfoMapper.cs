@@ -1,6 +1,6 @@
-﻿namespace Producer.CarDataGenerator;
+﻿namespace Producer.Mappers;
 
-public static class AutoMapper
+public static class GeneratedInfoMapper
 {
     public static T MapTo<T>(IReadOnlyDictionary<string, object> values,
         Dictionary<string, Func<object>> predefinedValues)

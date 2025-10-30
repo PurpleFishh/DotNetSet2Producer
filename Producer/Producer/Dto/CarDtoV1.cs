@@ -1,12 +1,9 @@
-﻿namespace Producer.Generator;
+﻿namespace Producer.Dto;
 
 public record CarDtoV1(
-    string vehicleId,
-    DateTime tsUtc,
-    double speedKmh,
-    double fuelPct,
-    double coolantTempC,
-    (double lat, double lon) gps,
-    bool engineOn,
-    double odoKm
+    string VehicleId,
+    DateTime TsUtc,
+    double SpeedKmh,
+    double FuelPct,
+    double CoolantTempC
 );

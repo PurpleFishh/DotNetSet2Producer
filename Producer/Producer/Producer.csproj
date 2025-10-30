@@ -9,9 +9,7 @@
 
     <ItemGroup>
       <Folder Include="Controller\" />
-      <Folder Include="Entity\" />
       <Folder Include="Generator\" />
-      <Folder Include="Services\" />
     </ItemGroup>
 
     <ItemGroup>

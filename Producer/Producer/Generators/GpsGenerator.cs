@@ -1,19 +1,19 @@
 ﻿using Generator.Generators;
 using Generator.Generators.Helper;
-using Producer.Generator;
+using Producer.Entity;
 
-namespace Producer.CarDataGenerator.Generators;
+namespace Producer.Generators;
 
 public static class GpsGenerator
 {
-    public static IValueGenerator<(double, double)> Get()
+    public static IValueGenerator<GpsInfo> Get()
     {
-        var gps = new Dependent<(double, double)>((r, c) =>
+        var gps = new Dependent<GpsInfo>((r, c) =>
         {
             var (clat, clon) = (52.5201, 13.4049);
             var dLat = (r.NextDouble() - 0.5) * 0.003;
             var dLon = (r.NextDouble() - 0.5) * 0.006;
-            return (clat + dLat, clon + dLon);
+            return new GpsInfo(clat + dLat, clon + dLon);
         });
         return gps;
     }
