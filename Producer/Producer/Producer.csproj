@@ -7,4 +7,15 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Controller\" />
+      <Folder Include="Entity\" />
+      <Folder Include="Generator\" />
+      <Folder Include="Services\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Generator\Generator.csproj" />
+    </ItemGroup>
+
 </Project>

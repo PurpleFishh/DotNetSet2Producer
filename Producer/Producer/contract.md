@@ -10,7 +10,7 @@
 * Producer writes to `*.tmp`, fsyncs, then **atomic rename** to final name (same volume).
 * Consumer must ignore any file ending in `.tmp`.
 
-## Sidecar metadata (required)
+## Sidecar metadata
 
 ```json
 {
@@ -44,7 +44,7 @@
 }
 ```
 
-Validation (JSON Schema draft 2020-12):
+Validation:
 
 * `vehicleId`: string, non-empty
 * `tsUtc`: string, `date-time`
