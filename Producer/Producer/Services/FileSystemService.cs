@@ -10,8 +10,8 @@ public class FileSystemService : IDisposable
     private readonly string _vehicleId;
     private readonly string _baseFolder;
     private readonly bool _useCompression;
-    private readonly string _encoding = "utf8";
-    private readonly string _version = "2.0";
+    private const string Encoding = "utf8";
+    private const string Version = "2.0";
 
     private readonly int _maxRecords;
     private readonly long _maxBytes;
@@ -83,7 +83,7 @@ public class FileSystemService : IDisposable
         await _writer!.WriteAsync(prefix + json);
 
         _recordCount++;
-        _bytesWritten += Encoding.UTF8.GetByteCount(json) + 1; // + newline
+        _bytesWritten += System.Text.Encoding.UTF8.GetByteCount(json) + 1; // + newline
 
         if (ShouldRotate())
             await RotateAsync();
@@ -106,13 +106,7 @@ public class FileSystemService : IDisposable
         await _fileStream!.DisposeAsync();
 
         // Compute checksum
-        string sha256;
-        await using (var fs = File.OpenRead(_tmpPath!))
-        {
-            using var sha = SHA256.Create();
-            var hash = sha.ComputeHash(fs);
-            sha256 = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-        }
+        var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
 
         // Rename .tmp -> final
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
@@ -120,20 +114,17 @@ public class FileSystemService : IDisposable
         // Write metadata
         var meta = new
         {
-            version = _version,
+            version = Version,
             createdUtc = DateTime.UtcNow.ToString("o"),
             recordCount = _recordCount,
             sha256,
-            encoding = _encoding,
+            encoding = Encoding,
             compression = _useCompression ? "gzip" : "none"
         };
 
         var metaPath = _finalPath! + ".meta.json";
         await File.WriteAllTextAsync(metaPath,
             JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
-
-        // Start new temp file
-        OpenNewFile();
     }
 
     public async ValueTask DisposeAsync()
