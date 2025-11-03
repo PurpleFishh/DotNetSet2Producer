@@ -2,20 +2,22 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Producer.Entity;
 
 namespace Producer.Services;
 
-public class FileSystemService : IDisposable
+public class FileSystemService(
+    string baseFolder,
+    string vehicleId,
+    CompressionKind compress = CompressionKind.None,
+    int maxRecords = 5000,
+    long maxBytes = 10 * 1024 * 1024,
+    TimeSpan? maxAge = null)
+    : IDisposable
 {
-    private readonly string _vehicleId;
-    private readonly string _baseFolder;
-    private readonly bool _useCompression;
-    private const string Encoding = "utf8";
     private const string Version = "2.0";
 
-    private readonly int _maxRecords;
-    private readonly long _maxBytes;
-    private readonly TimeSpan _maxAge;
+    private readonly TimeSpan _maxAge = maxAge ?? TimeSpan.FromMinutes(1);
 
     private int _recordCount;
     private long _bytesWritten;
@@ -26,37 +28,22 @@ public class FileSystemService : IDisposable
     private string? _tmpPath;
     private string? _finalPath;
 
-    public FileSystemService(
-        string baseFolder,
-        string vehicleId,
-        bool compress = false,
-        int maxRecords = 5000,
-        long maxBytes = 10 * 1024 * 1024,
-        TimeSpan? maxAge = null)
-    {
-        _baseFolder = baseFolder;
-        _vehicleId = vehicleId;
-        _useCompression = compress;
-        _maxRecords = maxRecords;
-        _maxBytes = maxBytes;
-        _maxAge = maxAge ?? TimeSpan.FromMinutes(1);
-    }
+    private readonly FileMetadataService _metadataService = new FileMetadataService();
 
-    // Open first temp file
-    public void OpenNewFile()
+    private void OpenNewFile()
     {
-        Directory.CreateDirectory(Path.Combine(_baseFolder, _vehicleId));
+        Directory.CreateDirectory(Path.Combine(baseFolder, vehicleId));
 
         var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        var ext = _useCompression ? ".jsonl.gz" : ".jsonl";
-        var fileName = $"telemetry_{ts}_{_vehicleId}{ext}";
-        var folder = Path.Combine(_baseFolder, _vehicleId);
+        var ext = compress == CompressionKind.Gzip ? ".jsonl.gz" : ".jsonl";
+        var fileName = $"telemetry_{ts}_{vehicleId}{ext}";
+        var folder = Path.Combine(baseFolder, vehicleId);
         _tmpPath = Path.Combine(folder, fileName + ".tmp");
         _finalPath = Path.Combine(folder, fileName);
 
         _fileStream = new FileStream(_tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024,
             useAsync: true);
-        Stream dataStream = _useCompression
+        Stream dataStream = compress == CompressionKind.Gzip
             ? new GZipStream(_fileStream, CompressionLevel.Fastest)
             : _fileStream;
 
@@ -83,7 +70,7 @@ public class FileSystemService : IDisposable
         await _writer!.WriteAsync(prefix + json);
 
         _recordCount++;
-        _bytesWritten += System.Text.Encoding.UTF8.GetByteCount(json) + 1; // + newline
+        _bytesWritten += Encoding.UTF8.GetByteCount(json);
 
         if (ShouldRotate())
             await RotateAsync();
@@ -91,8 +78,8 @@ public class FileSystemService : IDisposable
 
     private bool ShouldRotate()
     {
-        if (_recordCount >= _maxRecords) return true;
-        if (_bytesWritten >= _maxBytes) return true;
+        if (_recordCount >= maxRecords) return true;
+        if (_bytesWritten >= maxBytes) return true;
         if (DateTime.UtcNow - _openedUtc >= _maxAge) return true;
         return false;
     }
@@ -104,27 +91,10 @@ public class FileSystemService : IDisposable
         await _writer!.FlushAsync();
         await _writer!.DisposeAsync();
         await _fileStream!.DisposeAsync();
+        _writer = null;
 
-        // Compute checksum
-        var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
-
-        // Rename .tmp -> final
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
-
-        // Write metadata
-        var meta = new
-        {
-            version = Version,
-            createdUtc = DateTime.UtcNow.ToString("o"),
-            recordCount = _recordCount,
-            sha256,
-            encoding = Encoding,
-            compression = _useCompression ? "gzip" : "none"
-        };
-
-        var metaPath = _finalPath! + ".meta.json";
-        await File.WriteAllTextAsync(metaPath,
-            JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
+        await _metadataService.WriteMetaDataFile(_finalPath!, Version, _recordCount, compress);
     }
 
     public async ValueTask DisposeAsync()

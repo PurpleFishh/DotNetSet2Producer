@@ -1,4 +1,5 @@
-﻿using Producer.Mappers;
+﻿using Producer.Entity;
+using Producer.Mappers;
 using Producer.Services;
 
 namespace Producer.Controller;
@@ -9,8 +10,8 @@ public class CarController(string carId)
 
     public async Task InfoPublish()
     {
-        var writer = new FileSystemService("inbox", carId, compress: false);
-        
+        var writer = new FileSystemService("inbox", carId, compress: CompressionKind.None);
+
         for (var i = 0; i < 12000; i++)
         {
             var result = _carTelemetryService.Next();
