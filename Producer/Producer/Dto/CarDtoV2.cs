@@ -1,17 +1,14 @@
-﻿namespace Producer.Dto;
+﻿using Producer.Entity;
+
+namespace Producer.Dto;
 
 public record CarDtoV2(
     string VehicleId,
     DateTime TsUtc,
-    double SpeedKmh,
+    double Odometer,
     double FuelPct,
-    double CoolantTempC,
-    GpsDto Gps,
-    bool EngineOn,
-    double OdoKm
-);
-
-public record GpsDto(
-    double Lat,
-    double Lon
+    string DeliveryStatus,
+    List<int> DeliveryList,
+    List<int>? WhatWasAdded,
+    string SchemaVersion = "2.0"
 );

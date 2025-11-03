@@ -16,7 +16,7 @@ public class CarController(string carId)
         {
             var result = _carTelemetryService.Next();
             await writer.AddAsync(result.ToDtoV2());
-            await Task.Delay(50);
+            await Task.Delay(10);
         }
     }
 }

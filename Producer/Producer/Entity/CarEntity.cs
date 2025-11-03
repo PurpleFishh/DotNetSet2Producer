@@ -3,15 +3,16 @@
 public record CarEntity(
     string VehicleId,
     DateTime TsUtc,
-    double SpeedKmh,
+    double Odometer,
     double FuelPct,
-    double CoolantTempC,
-    GpsInfo Gps,
-    bool EngineOn,
-    double OdoKm
+    DeliveryStatus DeliveryStatus,
+    List<int> DeliveryList,
+    List<int>? WhatWasAdded
 );
 
-public record GpsInfo(
-    double Lat,
-    double Lon
-);  
+public enum DeliveryStatus
+{
+    PickUp,
+    InProgress,
+    Completed
+}

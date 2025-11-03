@@ -47,7 +47,10 @@ public class FileSystemService(
             ? new GZipStream(_fileStream, CompressionLevel.Fastest)
             : _fileStream;
 
-        _writer = new StreamWriter(dataStream, new UTF8Encoding(false), bufferSize: 64 * 1024);
+        _writer = new StreamWriter(dataStream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            bufferSize: 64 * 1024);
+        _writer.NewLine = "\n";
+
         _recordCount = 0;
         _bytesWritten = 0;
         _openedUtc = DateTime.UtcNow;
@@ -55,18 +58,19 @@ public class FileSystemService(
 
     public async Task AddAsync(object record)
     {
-        var prefix = ",\n";
+        var first = false;
         if (_writer == null)
         {
             OpenNewFile();
             await _writer!.WriteLineAsync("[");
-            prefix = "";
+            first = true;
         }
 
         var json = JsonSerializer.Serialize(record, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
+        var prefix = first ? "" : $",{_writer.NewLine}";
         await _writer!.WriteAsync(prefix + json);
 
         _recordCount++;
@@ -86,15 +90,16 @@ public class FileSystemService(
 
     private async Task RotateAsync()
     {
-        await _writer!.WriteLineAsync("\n]");
+        await _writer!.WriteLineAsync($"{_writer.NewLine}]");
 
         await _writer!.FlushAsync();
         await _writer!.DisposeAsync();
         await _fileStream!.DisposeAsync();
         _writer = null;
 
+        var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
-        await _metadataService.WriteMetaDataFile(_finalPath!, Version, _recordCount, compress);
+        await _metadataService.WriteMetaDataFileForFinal(_finalPath!, Version, _recordCount, compress, sha256);
     }
 
     public async ValueTask DisposeAsync()

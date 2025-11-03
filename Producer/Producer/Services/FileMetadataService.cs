@@ -33,4 +33,22 @@ public class FileMetadataService
         await File.WriteAllTextAsync(metaPath,
             JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
     }
+
+    public Task WriteMetaDataFileForFinal(string finalPath, string version, int recordCount,
+        CompressionKind compression, string sha256AlreadyComputed)
+    {
+        var meta = new MetaData
+        {
+            Version = version,
+            CreatedUtc = DateTime.UtcNow.ToString("o"),
+            RecordCount = recordCount,
+            Sha256 = sha256AlreadyComputed,
+            Encoding = Encoding,
+            Compression = compression
+        };
+
+        var metaPath = finalPath + MetadataFileExtension;
+        var json = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true });
+        return File.WriteAllTextAsync(metaPath, json);
+    }
 }

@@ -18,37 +18,44 @@ public class CarTelemetryService
 
     public CarTelemetryService(
         string vehicleId,
-        // (double lat, double lon) center,
         int? seed
     )
     {
-        _vehicleId = vehicleId;
         _rnd = new DefaultRandomSource(seed);
         _ctx = new GenerationContext();
 
         var engineOn = EngineStatusGenerator.Get();
-        var speed = SpeedGenerator.Get();
+
+        var ts = TimestampGenerator.Get(0, 30);
+        var vehicleIdGetter = VehicleIdGenerator.Get(vehicleId);
+
+        var deliveryStatus = DeliveryStatusGenerator.Get();
+
+        var deliveryList = DeliveryListGenerator.Get();
+        var whatWasAdded = WhatWasAddedGenerator.Get();
+
+        var odometer = OdometerGenerator.Get();
         var fuelPct = FuelPctGenerator.Get();
-        var coolant = CoolantInfoGenerator.Get();
-        var gps = GpsGenerator.Get();
-        var odo = OdoInfoGenerator.Get();
+
+        _ctx.Set("MiddayTime", new TimeOnly(12, 00, 00));
 
         var predefined = new Dictionary<string, Func<object>>
         {
-            ["VehicleId"] = () => vehicleId,
-            ["TsUtc"] = () => DateTime.UtcNow
+            // ["VehicleId"] = () => vehicleIdGetter.Next(_rnd, _ctx),
+            // ["TsUtc"] = () => ts.Next(_rnd, _ctx)
         };
 
         CarEntity DtoMapper(IReadOnlyDictionary<string, object> d)
             => GeneratedInfoMapper.MapTo<CarEntity>(d, predefined);
 
         _builder = new RecordBuilder<CarEntity>(DtoMapper)
-            .AddStep("EngineOn", engineOn)
-            .AddStep("SpeedKmh", new Round<double>(speed, 1))
-            .AddStep("FuelPct", new Round<double>(fuelPct, 1))
-            .AddStep("CoolantTempC", new Round<double>(coolant, 1))
-            .AddStep("Gps", gps)
-            .AddStep("OdoKm", odo);
+            .AddStep("VehicleId", vehicleIdGetter)
+            .AddStep("TsUtc", ts)
+            .AddStep("DeliveryStatus", deliveryStatus)
+            .AddStep("DeliveryList", deliveryList)
+            .AddStep("WhatWasAdded", whatWasAdded)
+            .AddStep("Odometer", odometer)
+            .AddStep("FuelPct", fuelPct);
     }
 
     public CarEntity Next() => _builder.Build(_rnd, _ctx);
