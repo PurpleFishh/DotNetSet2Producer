@@ -9,13 +9,11 @@ public class DeliveryListGenerator
     {
         return new Dependent<List<int>>((r, c) =>
         {
-            if (!c.TryGet("DeliveryList", out List<int>? list))
-            {
-                list = [];
-                c.Set("DeliveryList", list);
-            }
+            var packages = c.TryGet("DeliveryList", out List<int>? list) ? list! : [];
 
-            return [..list!];
+            var addedPackages = c.TryGet("WhatWasAdded", out List<int>? added) ? added! : [];
+            packages.AddRange(addedPackages);
+            return packages;
         });
     }
 }

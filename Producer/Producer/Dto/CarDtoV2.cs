@@ -10,5 +10,5 @@ public record CarDtoV2(
     string DeliveryStatus,
     List<int> DeliveryList,
     List<int>? WhatWasAdded,
-    string SchemaVersion = "2.0"
+    string SchemaVersion = "v2"
 );

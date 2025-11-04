@@ -8,5 +8,5 @@ public record CarDtoV1(
     string DeliveryStatus,
     List<int> DeliveryList,
     List<int>? WhatWasAdded,
-    string SchemaVersion = "1.0"
+    string SchemaVersion = "v1"
 );

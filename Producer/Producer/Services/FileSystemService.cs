@@ -2,21 +2,27 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Generator.Random;
+using Producer.Config;
 using Producer.Entity;
+using Producer.Utils;
 
 namespace Producer.Services;
 
 public class FileSystemService(
     string baseFolder,
     string vehicleId,
+    string version,
+    int backlogThreshold,
+    TimeSpan backoffBase,
+    TimeSpan backoffMax,
     CompressionKind compress = CompressionKind.None,
     int maxRecords = 5000,
     long maxBytes = 10 * 1024 * 1024,
-    TimeSpan? maxAge = null)
-    : IDisposable
+    TimeSpan? maxAge = null
+)
+    : IDisposable, IAsyncDisposable
 {
-    private const string Version = "2.0";
-
     private readonly TimeSpan _maxAge = maxAge ?? TimeSpan.FromMinutes(1);
 
     private int _recordCount;
@@ -28,7 +34,13 @@ public class FileSystemService(
     private string? _tmpPath;
     private string? _finalPath;
 
+
     private readonly FileMetadataService _metadataService = new FileMetadataService();
+
+    private readonly BackpressureService _backpressureService = new BackpressureService(baseFolder, vehicleId,
+        backlogThreshold, backoffBase, backoffMax);
+
+    private readonly FaultInjectionService _faultInjection = new FaultInjectionService();
 
     private void OpenNewFile()
     {
@@ -58,6 +70,8 @@ public class FileSystemService(
 
     public async Task AddAsync(object record)
     {
+        if (_faultInjection.ShouldDropRecord()) return;
+
         var first = false;
         if (_writer == null)
         {
@@ -97,20 +111,73 @@ public class FileSystemService(
         await _fileStream!.DisposeAsync();
         _writer = null;
 
+        await FinalizeFile();
+        await _backpressureService.ApplyBackpressureAsync();
+    }
+
+    private async Task FinalizeFile()
+    {
+        var corruptionPhase = _faultInjection.GetRandomPhase();
+        if (corruptionPhase == FaultPhase.BeforeHash)
+        {
+            var what = _faultInjection.MaybeCorruptTail(_tmpPath!);
+            if (what != null) Console.WriteLine($"[FAULT before hash] {_tmpPath}: {what}");
+        }
+
         var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
-        await _metadataService.WriteMetaDataFileForFinal(_finalPath!, Version, _recordCount, compress, sha256);
+        await _metadataService.WriteMetaDataFileForFinal(_finalPath!, version, _recordCount, compress, sha256);
+
+        if (corruptionPhase == FaultPhase.AfterHash)
+        {
+            var what = _faultInjection.MaybeCorruptTail(_finalPath!);
+            if (what != null)
+                Console.WriteLine($"[FAULT after hash]  {_finalPath}: {what} (checksum now mismatches sidecar)");
+        }
     }
+
+    private static bool IsFileContentFinalized(string path)
+    {
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return fs.GetLastChar() == ']';
+    }
+
+
+    public async Task FinalizeOnShutdownAsync()
+    {
+        if (_tmpPath is null || _finalPath is null) return;
+
+        if (_writer != null)
+        {
+            await RotateAsync();
+            return;
+        }
+
+        if (!File.Exists(_tmpPath)) return;
+        if (!IsFileContentFinalized(_tmpPath))
+            await File.AppendAllTextAsync(_tmpPath, "]", new UTF8Encoding(false));
+
+        await FinalizeFile();
+    }
+
+    public void FinalizeOnShutdownSync() => FinalizeOnShutdownAsync().GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
     {
-        if (_writer != null)
+        try
         {
-            await _writer.FlushAsync();
-            await _writer.DisposeAsync();
+            await FinalizeOnShutdownAsync();
         }
+        finally
+        {
+            if (_writer != null)
+            {
+                await _writer.FlushAsync();
+                await _writer.DisposeAsync();
+            }
 
-        _fileStream?.Dispose();
+            _fileStream?.Dispose();
+        }
     }
 
     public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
