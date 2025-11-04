@@ -1,8 +1,7 @@
 ﻿using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Generator.Random;
+using Microsoft.Extensions.Logging;
 using Producer.Config;
 using Producer.Entity;
 using Producer.Utils;
@@ -41,6 +40,7 @@ public class FileSystemService(
         backlogThreshold, backoffBase, backoffMax);
 
     private readonly FaultInjectionService _faultInjection = new FaultInjectionService();
+    private readonly ILogger<FileSystemService> _logger = AppLogger.Get<FileSystemService>();
 
     private void OpenNewFile()
     {
@@ -52,6 +52,10 @@ public class FileSystemService(
         var folder = Path.Combine(baseFolder, vehicleId);
         _tmpPath = Path.Combine(folder, fileName + ".tmp");
         _finalPath = Path.Combine(folder, fileName);
+
+        _logger.LogInformation(
+            "Opening new telemetry file. VehicleId={VehicleId} TmpPath={TmpPath} FinalPath={FinalPath} Compression={Compression} MaxRecords={MaxRecords} MaxBytes={MaxBytes} MaxAgeSeconds={MaxAgeSeconds}",
+            vehicleId, _tmpPath, _finalPath, compress, maxRecords, maxBytes, _maxAge.TotalSeconds);
 
         _fileStream = new FileStream(_tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024,
             useAsync: true);
@@ -66,11 +70,16 @@ public class FileSystemService(
         _recordCount = 0;
         _bytesWritten = 0;
         _openedUtc = DateTime.UtcNow;
+        _logger.LogDebug("Telemetry file opened at {OpenedUtc:O}", _openedUtc);
     }
 
     public async Task AddAsync(object record)
     {
-        if (_faultInjection.ShouldDropRecord()) return;
+        if (_faultInjection.ShouldDropRecord())
+        {
+            _logger.LogInformation("Dropping record due to fault injection");
+            return;
+        }
 
         var first = false;
         if (_writer == null)
@@ -78,6 +87,7 @@ public class FileSystemService(
             OpenNewFile();
             await _writer!.WriteLineAsync("[");
             first = true;
+            _logger.LogDebug("Started JSON array for new telemetry file {TmpPath}", _tmpPath);
         }
 
         var json = JsonSerializer.Serialize(record, new JsonSerializerOptions
@@ -90,49 +100,88 @@ public class FileSystemService(
         _recordCount++;
         _bytesWritten += Encoding.UTF8.GetByteCount(json);
 
+        if (_recordCount == 1 || _recordCount % 100 == 0)
+            _logger.LogDebug(
+                "Record appended. Count={RecordCount} BytesWritten={BytesWritten} AgeSeconds={AgeSeconds:F2}",
+                _recordCount, _bytesWritten, (DateTime.UtcNow - _openedUtc).TotalSeconds);
+
+
         if (ShouldRotate())
             await RotateAsync();
     }
 
     private bool ShouldRotate()
     {
-        if (_recordCount >= maxRecords) return true;
-        if (_bytesWritten >= maxBytes) return true;
-        if (DateTime.UtcNow - _openedUtc >= _maxAge) return true;
+        if (_recordCount >= maxRecords)
+        {
+            _logger.LogInformation(
+                "Rotating file due to maxRecords reached. Count={RecordCount} MaxRecords={MaxRecords}", _recordCount,
+                maxRecords);
+            return true;
+        }
+
+        if (_bytesWritten >= maxBytes)
+        {
+            _logger.LogInformation(
+                "Rotating file due to maxBytes reached. BytesWritten={BytesWritten} MaxBytes={MaxBytes}", _bytesWritten,
+                maxBytes);
+            return true;
+        }
+
+        var age = DateTime.UtcNow - _openedUtc;
+        if (age >= _maxAge)
+        {
+            _logger.LogInformation(
+                "Rotating file due to maxAge reached. AgeSeconds={AgeSeconds:F2} MaxAgeSeconds={MaxAgeSeconds:F2}",
+                age.TotalSeconds, _maxAge.TotalSeconds);
+            return true;
+        }
+
         return false;
     }
 
     private async Task RotateAsync()
     {
+        _logger.LogInformation(
+            "Rotating telemetry file. TmpPath={TmpPath} FinalPath={FinalPath} Records={RecordCount} Bytes={BytesWritten} AgeSeconds={AgeSeconds:F2}",
+            _tmpPath, _finalPath, _recordCount, _bytesWritten, (DateTime.UtcNow - _openedUtc).TotalSeconds);
+
         await _writer!.WriteLineAsync($"{_writer.NewLine}]");
 
         await _writer!.FlushAsync();
         await _writer!.DisposeAsync();
         await _fileStream!.DisposeAsync();
         _writer = null;
+        _logger.LogDebug("Writer and stream disposed for {TmpPath}", _tmpPath);
 
         await FinalizeFile();
         await _backpressureService.ApplyBackpressureAsync();
+        _logger.LogDebug("Backpressure applied after rotation for vehicle {VehicleId}", vehicleId);
     }
 
     private async Task FinalizeFile()
     {
+        _logger.LogDebug("Finalizing file. TmpPath={TmpPath} FinalPath={FinalPath}", _tmpPath, _finalPath);
         var corruptionPhase = _faultInjection.GetRandomPhase();
         if (corruptionPhase == FaultPhase.BeforeHash)
         {
-            var what = _faultInjection.MaybeCorruptTail(_tmpPath!);
-            if (what != null) Console.WriteLine($"[FAULT before hash] {_tmpPath}: {what}");
+            _logger.LogWarning("Potential corruption before hash on {TmpPath}", _tmpPath);
+            _faultInjection.MaybeCorruptTail(_tmpPath!);
         }
 
         var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
+        _logger.LogDebug("Checksum computed for {TmpPath} Sha256={Sha256}", _tmpPath, sha256);
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
+        _logger.LogInformation(
+            "Moved temp file to final. FinalPath={FinalPath} Records={RecordCount} Compression={Compression}",
+            _finalPath, _recordCount, compress);
         await _metadataService.WriteMetaDataFileForFinal(_finalPath!, version, _recordCount, compress, sha256);
+        _logger.LogDebug("Metadata file written for {FinalPath}", _finalPath);
 
         if (corruptionPhase == FaultPhase.AfterHash)
         {
-            var what = _faultInjection.MaybeCorruptTail(_finalPath!);
-            if (what != null)
-                Console.WriteLine($"[FAULT after hash]  {_finalPath}: {what} (checksum now mismatches sidecar)");
+            _logger.LogWarning("Potential corruption after hash on {FinalPath}", _finalPath);
+            _faultInjection.MaybeCorruptTail(_finalPath!);
         }
     }
 
@@ -145,25 +194,40 @@ public class FileSystemService(
 
     public async Task FinalizeOnShutdownAsync()
     {
-        if (_tmpPath is null || _finalPath is null) return;
+        if (_tmpPath is null || _finalPath is null)
+        {
+            _logger.LogDebug("FinalizeOnShutdownAsync skipped: no active file paths");
+            return;
+        }
 
         if (_writer != null)
         {
+            _logger.LogInformation("FinalizeOnShutdownAsync: active writer detected, rotating file");
             await RotateAsync();
             return;
         }
 
-        if (!File.Exists(_tmpPath)) return;
+        if (!File.Exists(_tmpPath))
+        {
+            _logger.LogDebug("FinalizeOnShutdownAsync: tmp file missing {TmpPath}", _tmpPath);
+            return;
+        }
+
         if (!IsFileContentFinalized(_tmpPath))
+        {
+            _logger.LogDebug("FinalizeOnShutdownAsync: appending closing bracket to {TmpPath}", _tmpPath);
             await File.AppendAllTextAsync(_tmpPath, "]", new UTF8Encoding(false));
+        }
 
         await FinalizeFile();
+        _logger.LogInformation("FinalizeOnShutdownAsync completed for {FinalPath}", _finalPath);
     }
 
     public void FinalizeOnShutdownSync() => FinalizeOnShutdownAsync().GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
     {
+        _logger.LogDebug("DisposeAsync starting for vehicle {VehicleId}", vehicleId);
         try
         {
             await FinalizeOnShutdownAsync();
@@ -172,11 +236,13 @@ public class FileSystemService(
         {
             if (_writer != null)
             {
+                _logger.LogDebug("DisposeAsync: flushing and disposing writer for {TmpPath}", _tmpPath);
                 await _writer.FlushAsync();
                 await _writer.DisposeAsync();
             }
 
             _fileStream?.Dispose();
+            _logger.LogDebug("DisposeAsync completed for vehicle {VehicleId}", vehicleId);
         }
     }
 

@@ -1,4 +1,7 @@
-﻿namespace Producer.Services;
+﻿using Microsoft.Extensions.Logging;
+using Producer.Utils;
+
+namespace Producer.Services;
 
 public class BackpressureService(
     string baseFolder,
@@ -7,6 +10,9 @@ public class BackpressureService(
     TimeSpan backoffBase,
     TimeSpan backoffMax)
 {
+    
+    private readonly ILogger<BackpressureService> _logger = AppLogger.Get<BackpressureService>();
+    
     public async Task ApplyBackpressureAsync()
     {
         var folder = Path.Combine(baseFolder, vehicleId);
@@ -21,7 +27,7 @@ public class BackpressureService(
         var delayMs = Math.Min(baseMs * Math.Pow(2, over - 1), maxMs);
         var delay = TimeSpan.FromMilliseconds(delayMs);
 
-        Console.WriteLine(
+        _logger.LogWarning(
             $"Backpressure: {unprocessed} unprocessed files in inbox/{vehicleId}. Delaying next rotation by {delay}. Threshold={backlogThreshold}.");
 
         await Task.Delay(delay);

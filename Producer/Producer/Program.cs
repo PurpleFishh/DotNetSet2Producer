@@ -1,17 +1,23 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Generator.Generators.ValueGenerator;
 using Generator.Random;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Producer.Config;
 using Producer.Controller;
 using Producer.Entity;
 using Producer.Services;
+using Producer.Utils;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddEnvironmentVariables()
     .Build();
-
 AppConfig.Initialize(configuration);
+
+AppLogger.Init();
+
+ILogger logger = AppLogger.Get("App");
 
 var rnd = new DefaultRandomSource();
 var carId = new CarIdGenerator().Next(rnd);
