@@ -15,7 +15,8 @@ public class BackpressureService(
     
     public async Task ApplyBackpressureAsync()
     {
-        var folder = Path.Combine(baseFolder, vehicleId);
+        // var folder = Path.Combine(baseFolder, vehicleId);
+        var folder = baseFolder;
         var unprocessed = CountUnprocessedFiles(folder);
 
         if (unprocessed <= backlogThreshold)

@@ -44,12 +44,14 @@ public class FileSystemService(
 
     private void OpenNewFile()
     {
-        Directory.CreateDirectory(Path.Combine(baseFolder, vehicleId));
+        // Directory.CreateDirectory(Path.Combine(baseFolder, vehicleId));
+        Directory.CreateDirectory(baseFolder);
 
         var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
         var ext = compress == CompressionKind.Gzip ? ".jsonl.gz" : ".jsonl";
         var fileName = $"telemetry_{ts}_{vehicleId}{ext}";
-        var folder = Path.Combine(baseFolder, vehicleId);
+        // var folder = Path.Combine(baseFolder, vehicleId);
+        var folder = baseFolder;
         _tmpPath = Path.Combine(folder, fileName + ".tmp");
         _finalPath = Path.Combine(folder, fileName);
 
