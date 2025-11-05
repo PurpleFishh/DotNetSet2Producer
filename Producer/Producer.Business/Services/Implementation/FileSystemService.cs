@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Producer.Business.Entity;
+using Producer.Business.Services.Interface;
 using Producer.Infrastructure.Config;
 using Producer.Infrastructure.Utils;
 
@@ -20,7 +21,7 @@ public class FileSystemService(
     long maxBytes = 10 * 1024 * 1024,
     TimeSpan? maxAge = null
 )
-    : IDisposable, IAsyncDisposable
+    : IFileSystemService
 {
     private readonly TimeSpan _maxAge = maxAge ?? TimeSpan.FromMinutes(1);
 
@@ -34,12 +35,12 @@ public class FileSystemService(
     private string? _finalPath;
 
 
-    private readonly FileMetadataService _metadataService = new FileMetadataService();
+    private readonly IFileMetadataService _metadataService = new FileMetadataService();
 
-    private readonly BackpressureService _backpressureService = new BackpressureService(baseFolder, vehicleId,
+    private readonly IBackpressureService _backpressureService = new BackpressureService(baseFolder, vehicleId,
         backlogThreshold, backoffBase, backoffMax);
 
-    private readonly FaultInjectionService _faultInjection = new FaultInjectionService();
+    private readonly IFaultInjectionService _faultInjection = new FaultInjectionService();
     private readonly ILogger<FileSystemService> _logger = AppLogger.Get<FileSystemService>();
 
     private void OpenNewFile()

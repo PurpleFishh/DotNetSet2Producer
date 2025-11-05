@@ -1,12 +1,13 @@
 ﻿using Producer.Business.Entity;
 using Producer.Business.Mappers;
 using Producer.Business.Services.Implementation;
+using Producer.Business.Services.Interface;
 
 namespace Producer.Presentation.Controller;
 
 public class CarController(string carId, DataSchemas schema, FileSystemService writer)
 {
-    private readonly CarTelemetryService _carTelemetryService = new(carId, carId.GetHashCode());
+    private readonly ICarTelemetryService _carTelemetryService = new CarTelemetryService(carId, carId.GetHashCode());
 
     public async Task InfoPublish()
     {

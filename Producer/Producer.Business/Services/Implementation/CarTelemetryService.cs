@@ -2,11 +2,12 @@
 using Generator.Random;
 using Producer.Business.Entity;
 using Producer.Business.Mappers;
+using Producer.Business.Services.Interface;
 using Producer.Infrastructure.Generators;
 
 namespace Producer.Business.Services.Implementation;
 
-public class CarTelemetryService
+public class CarTelemetryService : ICarTelemetryService
 {
     private readonly IRandomSource _rnd;
     private readonly GenerationContext _ctx;

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Producer.Business.Services.Interface;
 using Producer.Infrastructure.Utils;
 
 namespace Producer.Business.Services.Implementation;
@@ -8,7 +9,7 @@ public class BackpressureService(
     string vehicleId,
     int backlogThreshold,
     TimeSpan backoffBase,
-    TimeSpan backoffMax)
+    TimeSpan backoffMax) : IBackpressureService
 {
     private readonly ILogger<BackpressureService> _logger = AppLogger.Get<BackpressureService>();
 

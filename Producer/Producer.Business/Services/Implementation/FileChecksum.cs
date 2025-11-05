@@ -1,8 +1,9 @@
 ﻿using System.Security.Cryptography;
+using Producer.Business.Services.Interface;
 
 namespace Producer.Business.Services.Implementation;
 
-public class FileChecksum
+public class FileChecksum : IFileChecksum
 {
     public async Task<string> GetChecksum(string filePath)
     {

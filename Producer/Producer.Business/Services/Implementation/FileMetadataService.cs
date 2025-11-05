@@ -1,9 +1,10 @@
 ﻿using System.Text.Json;
 using Producer.Business.Entity;
+using Producer.Business.Services.Interface;
 
 namespace Producer.Business.Services.Implementation;
 
-public class FileMetadataService
+public class FileMetadataService : IFileMetadataService
 {
     private const string Encoding = "utf8";
     private const string MetadataFileExtension = ".meta.json";

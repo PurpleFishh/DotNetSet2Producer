@@ -1,12 +1,13 @@
 ﻿using System.Security.Cryptography;
 using Generator.Random;
 using Microsoft.Extensions.Logging;
+using Producer.Business.Services.Interface;
 using Producer.Infrastructure.Config;
 using Producer.Infrastructure.Utils;
 
 namespace Producer.Business.Services.Implementation;
 
-public sealed class FaultInjectionService
+public class FaultInjectionService : IFaultInjectionService
 {
     private readonly IRandomSource _rnd = new DefaultRandomSource();
     public readonly FaultInjectionOptions Options = AppConfig.Current!.FaultInjection;
