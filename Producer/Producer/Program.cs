@@ -3,11 +3,11 @@ using Generator.Generators.ValueGenerator;
 using Generator.Random;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Producer.Config;
-using Producer.Controller;
-using Producer.Entity;
-using Producer.Services;
-using Producer.Utils;
+using Producer.Business.Entity;
+using Producer.Business.Services.Implementation;
+using Producer.Infrastructure.Config;
+using Producer.Infrastructure.Utils;
+using Producer.Presentation.Controller;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

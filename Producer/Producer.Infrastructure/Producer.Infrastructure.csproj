@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -9,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0-rc.2.25502.107" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0-rc.2.25502.107" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.0-rc.2.25502.107" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0-rc.2.25502.107" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0-rc.2.25502.107" />
@@ -17,14 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Producer.Infrastructure\Producer.Infrastructure.csproj" />
-      <ProjectReference Include="..\Producer.Presentation\Producer.Presentation.csproj" />
+      <ProjectReference Include="..\Generator\Generator.csproj" />
     </ItemGroup>
 
 </Project>
