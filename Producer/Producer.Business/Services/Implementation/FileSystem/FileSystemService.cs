@@ -2,28 +2,21 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
-using Producer.Infrastructure.Config;
-using Producer.Infrastructure.Utils;
+using Producer.Common;
+using Producer.Common.Config;
+using Producer.Common.Extensions;
 
-namespace Producer.Business.Services.Implementation;
+namespace Producer.Business.Services.Implementation.FileSystem;
 
-public class FileSystemService(
-    string baseFolder,
-    string vehicleId,
-    string version,
-    int backlogThreshold,
-    TimeSpan backoffBase,
-    TimeSpan backoffMax,
-    CompressionKind compress = CompressionKind.None,
-    int maxRecords = 5000,
-    long maxBytes = 10 * 1024 * 1024,
-    TimeSpan? maxAge = null
-)
-    : IFileSystemService
+public class FileSystemService : IFileSystemService
 {
-    private readonly TimeSpan _maxAge = maxAge ?? TimeSpan.FromMinutes(1);
+    private readonly string _vehicleId;
+    private readonly DataSchemas _version;
+
+    private readonly FileSystemServiceOptions _fsOptions;
 
     private int _recordCount;
     private long _bytesWritten;
@@ -34,35 +27,47 @@ public class FileSystemService(
     private string? _tmpPath;
     private string? _finalPath;
 
+    private readonly IFileMetadataService _metadataService;
+    private readonly IBackpressureService _backpressureService;
+    private readonly IFaultInjectionService _faultInjection;
+    private readonly ILogger<FileSystemService> _logger;
 
-    private readonly IFileMetadataService _metadataService = new FileMetadataService();
+    public FileSystemService(
+        IOptions<ProducerOptions> optionsAccessor,
+        IVehicleContext vehicle,
+        IBackpressureService backpressureService,
+        IFaultInjectionService faultInjection,
+        IFileMetadataService metadataService,
+        ILogger<FileSystemService> logger)
+    {
+        _fsOptions = FileSystemServiceOptions.From(optionsAccessor.Value);
+        _vehicleId = vehicle.VehicleId;
+        _version = vehicle.Version;
 
-    private readonly IBackpressureService _backpressureService = new BackpressureService(baseFolder, vehicleId,
-        backlogThreshold, backoffBase, backoffMax);
-
-    private readonly IFaultInjectionService _faultInjection = new FaultInjectionService();
-    private readonly ILogger<FileSystemService> _logger = AppLogger.Get<FileSystemService>();
+        _logger = logger;
+        _backpressureService = backpressureService;
+        _faultInjection = faultInjection;
+        _metadataService = metadataService;
+    }
 
     private void OpenNewFile()
     {
-        // Directory.CreateDirectory(Path.Combine(baseFolder, vehicleId));
-        Directory.CreateDirectory(baseFolder);
+        Directory.CreateDirectory(_fsOptions.BaseFolder);
 
         var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        var ext = compress == CompressionKind.Gzip ? ".jsonl.gz" : ".jsonl";
-        var fileName = $"telemetry_{ts}_{vehicleId}{ext}";
-        // var folder = Path.Combine(baseFolder, vehicleId);
-        var folder = baseFolder;
-        _tmpPath = Path.Combine(folder, fileName + ".tmp");
-        _finalPath = Path.Combine(folder, fileName);
+        var ext = _fsOptions.Compression == CompressionKind.Gzip ? ".jsonl.gz" : ".jsonl";
+        var fileName = $"telemetry_{ts}_{_vehicleId}{ext}";
+        _tmpPath = Path.Combine(_fsOptions.BaseFolder, fileName + ".tmp");
+        _finalPath = Path.Combine(_fsOptions.BaseFolder, fileName);
 
         _logger.LogInformation(
             "Opening new telemetry file. VehicleId={VehicleId} TmpPath={TmpPath} FinalPath={FinalPath} Compression={Compression} MaxRecords={MaxRecords} MaxBytes={MaxBytes} MaxAgeSeconds={MaxAgeSeconds}",
-            vehicleId, _tmpPath, _finalPath, compress, maxRecords, maxBytes, _maxAge.TotalSeconds);
+            _vehicleId, _tmpPath, _finalPath, _fsOptions.Compression, _fsOptions.MaxRecords, _fsOptions.MaxBytes,
+            _fsOptions.MaxAge.TotalSeconds);
 
         _fileStream = new FileStream(_tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024,
             useAsync: true);
-        Stream dataStream = compress == CompressionKind.Gzip
+        Stream dataStream = _fsOptions.Compression == CompressionKind.Gzip
             ? new GZipStream(_fileStream, CompressionLevel.Fastest)
             : _fileStream;
 
@@ -115,28 +120,28 @@ public class FileSystemService(
 
     private bool ShouldRotate()
     {
-        if (_recordCount >= maxRecords)
+        if (_recordCount >= _fsOptions.MaxRecords)
         {
             _logger.LogInformation(
                 "Rotating file due to maxRecords reached. Count={RecordCount} MaxRecords={MaxRecords}", _recordCount,
-                maxRecords);
+                _fsOptions.MaxRecords);
             return true;
         }
 
-        if (_bytesWritten >= maxBytes)
+        if (_bytesWritten >= _fsOptions.MaxBytes)
         {
             _logger.LogInformation(
                 "Rotating file due to maxBytes reached. BytesWritten={BytesWritten} MaxBytes={MaxBytes}", _bytesWritten,
-                maxBytes);
+                _fsOptions.MaxBytes);
             return true;
         }
 
         var age = DateTime.UtcNow - _openedUtc;
-        if (age >= _maxAge)
+        if (age >= _fsOptions.MaxAge)
         {
             _logger.LogInformation(
                 "Rotating file due to maxAge reached. AgeSeconds={AgeSeconds:F2} MaxAgeSeconds={MaxAgeSeconds:F2}",
-                age.TotalSeconds, _maxAge.TotalSeconds);
+                age.TotalSeconds, _fsOptions.MaxAge.TotalSeconds);
             return true;
         }
 
@@ -159,7 +164,7 @@ public class FileSystemService(
 
         await FinalizeFile();
         await _backpressureService.ApplyBackpressureAsync();
-        _logger.LogDebug("Backpressure applied after rotation for vehicle {VehicleId}", vehicleId);
+        _logger.LogDebug("Backpressure applied after rotation for vehicle {VehicleId}", _vehicleId);
     }
 
     private async Task FinalizeFile()
@@ -174,11 +179,12 @@ public class FileSystemService(
 
         var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
         _logger.LogDebug("Checksum computed for {TmpPath} Sha256={Sha256}", _tmpPath, sha256);
+        await _metadataService.WriteMetaDataFileForFinal(_tmpPath!, _version, _recordCount, _fsOptions.Compression,
+            sha256);
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
         _logger.LogInformation(
             "Moved temp file to final. FinalPath={FinalPath} Records={RecordCount} Compression={Compression}",
-            _finalPath, _recordCount, compress);
-        await _metadataService.WriteMetaDataFileForFinal(_finalPath!, version, _recordCount, compress, sha256);
+            _finalPath, _recordCount, _fsOptions.Compression);
         _logger.LogDebug("Metadata file written for {FinalPath}", _finalPath);
 
         if (corruptionPhase == FaultPhase.AfterHash)
@@ -230,7 +236,7 @@ public class FileSystemService(
 
     public async ValueTask DisposeAsync()
     {
-        _logger.LogDebug("DisposeAsync starting for vehicle {VehicleId}", vehicleId);
+        _logger.LogDebug("DisposeAsync starting for vehicle {VehicleId}", _vehicleId);
         try
         {
             await FinalizeOnShutdownAsync();
@@ -245,7 +251,7 @@ public class FileSystemService(
             }
 
             _fileStream?.Dispose();
-            _logger.LogDebug("DisposeAsync completed for vehicle {VehicleId}", vehicleId);
+            _logger.LogDebug("DisposeAsync completed for vehicle {VehicleId}", _vehicleId);
         }
     }
 

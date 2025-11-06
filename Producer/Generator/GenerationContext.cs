@@ -1,6 +1,6 @@
 ﻿namespace Generator;
 
-public class GenerationContext
+public class GenerationContext : IGenerationContext
 {
     private readonly Dictionary<string, object?> _bag = new();
     public void Set<T>(string key, T? value) => _bag[key] = value;

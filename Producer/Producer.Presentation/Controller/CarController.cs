@@ -1,22 +1,29 @@
-﻿using Producer.Business.Entity;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Producer.Business.Entity;
 using Producer.Business.Mappers;
 using Producer.Business.Services.Implementation;
 using Producer.Business.Services.Interface;
+using Producer.Common;
 
 namespace Producer.Presentation.Controller;
 
-public class CarController(string carId, DataSchemas schema, FileSystemService writer)
+public class CarController(
+    IFileSystemService writer,
+    ICarTelemetryService telemetry,
+    IServiceProvider services,
+    IVehicleContext ctx)
 {
-    private readonly ICarTelemetryService _carTelemetryService = new CarTelemetryService(carId, carId.GetHashCode());
+    private readonly ICarMapper _mapper = services.GetRequiredKeyedService<ICarMapper>(ctx.Version);
 
-    public async Task InfoPublish()
+    public async Task PublishCarData()
     {
-        var result = _carTelemetryService.Next();
+        var result = telemetry.GenerateValue();
+        var dto = _mapper.Map(result);
+        await writer.AddAsync(dto);
+    }
 
-        switch (schema)
-        {
-            case DataSchemas.V1_0: await writer.AddAsync(result.ToDtoV1()); break;
-            case DataSchemas.V2_0: await writer.AddAsync(result.ToDtoV2()); break;
-        }
+    public void FinalizeWriting()
+    {
+        writer.FinalizeOnShutdownSync();
     }
 }

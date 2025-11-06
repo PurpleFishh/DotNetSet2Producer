@@ -23,7 +23,7 @@ public class JitterAroundPrev(
     {
     }
 
-    public double Next(IRandomSource rnd, GenerationContext ctx)
+    public double Next(IRandomSource rnd, IGenerationContext ctx)
     {
         if (!ctx.TryGet<double>(key, out var prev))
             return fallback.Next(rnd, ctx);

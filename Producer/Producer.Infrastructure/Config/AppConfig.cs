@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Producer.Common.Config;
 
 namespace Producer.Infrastructure.Config;
 

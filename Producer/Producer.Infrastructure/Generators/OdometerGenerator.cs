@@ -2,15 +2,17 @@
 using Generator.Generators.Helper;
 using Generator.Generators.ValueGenerator;
 using Generator.Random;
+using Producer.Business.Entity;
+using Producer.Business.Services.Interface.Generators;
 
 namespace Producer.Infrastructure.Generators;
 
-public static class OdometerGenerator
+public class OdometerGenerator : IOdometerGenerator
 {
-    public static IValueGenerator<double> Get()
+    public IValueGenerator<double> Get()
     {
         var odo = new JitterAroundPrev(
-            key: "Odometer",
+            key: nameof(CarEntity.Odometer),
             min: 0,
             max: double.MaxValue,
             maxDelta: 0.2,

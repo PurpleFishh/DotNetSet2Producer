@@ -1,6 +1,4 @@
-﻿using Producer.Infrastructure.Generators;
-
-namespace Producer.Business.Entity;
+﻿namespace Producer.Business.Entity;
 
 public record CarEntity(
     string VehicleId,

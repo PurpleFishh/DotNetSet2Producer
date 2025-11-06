@@ -1,14 +1,16 @@
 ﻿using Generator.Generators;
 using Generator.Generators.Helper;
+using Producer.Business.Entity;
+using Producer.Business.Services.Interface.Generators;
 
 namespace Producer.Infrastructure.Generators;
 
-public static class TimestampGenerator
+public class TimestampGenerator : ITimestampGenerator
 {
-    public static IValueGenerator<DateTime> Get(int minutesBetweenEvents = 1, int secondsBetweenEvents = 0)
+    public IValueGenerator<DateTime> Get(int minutesBetweenEvents = 1, int secondsBetweenEvents = 0)
         => new Dependent<DateTime>((r, c) =>
         {
-            if (!c.TryGet("TsUtc", out DateTime tsUtc))
+            if (!c.TryGet(nameof(CarEntity.TsUtc), out DateTime tsUtc))
                 return DateTime.Today.AddHours(8); // start at 8am today
             tsUtc = tsUtc.AddMinutes(minutesBetweenEvents).AddSeconds(secondsBetweenEvents);
             if (tsUtc.Hour >= 16)

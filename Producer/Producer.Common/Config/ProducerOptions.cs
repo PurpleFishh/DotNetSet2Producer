@@ -1,4 +1,4 @@
-﻿namespace Producer.Infrastructure.Config;
+﻿namespace Producer.Common.Config;
 
 public sealed class PathOptions
 {
@@ -25,12 +25,6 @@ public sealed class WindowSizeOptions
     public double BackoffBaseSeconds { get; set; } = 5;
     public double BackoffMaxSeconds { get; set; } = 120;
     public int ExponentCap { get; set; } = 8;
-}
-
-public enum FaultPhase
-{
-    BeforeHash,
-    AfterHash
 }
 
 public sealed class FaultInjectionOptions

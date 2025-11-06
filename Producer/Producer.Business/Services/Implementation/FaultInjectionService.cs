@@ -1,18 +1,18 @@
 ﻿using System.Security.Cryptography;
 using Generator.Random;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
-using Producer.Infrastructure.Config;
-using Producer.Infrastructure.Utils;
+using Producer.Common.Config;
 
 namespace Producer.Business.Services.Implementation;
 
-public class FaultInjectionService : IFaultInjectionService
+public class FaultInjectionService(IOptions<FaultInjectionOptions> options, ILogger<FaultInjectionService> logger)
+    : IFaultInjectionService
 {
     private readonly IRandomSource _rnd = new DefaultRandomSource();
-    public readonly FaultInjectionOptions Options = AppConfig.Current!.FaultInjection;
-    private readonly ILogger<FaultInjectionService> _logger = AppLogger.Get<FaultInjectionService>();
-
+    public readonly FaultInjectionOptions Options = options.Value;
 
     public FaultPhase GetRandomPhase()
         => _rnd.NextInt(0, 1) == 0 ? FaultPhase.BeforeHash : FaultPhase.AfterHash;
@@ -27,13 +27,13 @@ public class FaultInjectionService : IFaultInjectionService
         if (Options.TruncateProb > 0 && _rnd.NextDouble() < Options.TruncateProb)
         {
             TruncateTail(path, Options.TruncateTailBytes);
-            _logger.LogInformation($"Truncated last {Options.TruncateTailBytes} bytes");
+            logger.LogInformation($"Truncated last {Options.TruncateTailBytes} bytes");
         }
 
         if (Options.CorruptTailProb > 0 && _rnd.NextDouble() < Options.CorruptTailProb)
         {
             CorruptTail(path, Options.CorruptTailBytes);
-            _logger.LogInformation($"Truncated last {Options.TruncateTailBytes} bytes");
+            logger.LogInformation($"Truncated last {Options.TruncateTailBytes} bytes");
         }
     }
 

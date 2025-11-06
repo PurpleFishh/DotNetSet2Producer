@@ -1,34 +1,38 @@
 ﻿using Generator.Generators;
 using Generator.Generators.Helper;
+using Microsoft.Extensions.Options;
+using Producer.Business.Entity;
+using Producer.Business.Services.Interface.Generators;
 
 namespace Producer.Infrastructure.Generators;
 
-public static class WhatWasAddedGenerator
+public class WhatWasAddedGenerator(IOptions<GeneratorTimeOptions> times) : IWhatWasAddedGenerator
 {
-    public static IValueGenerator<List<int>?> Get(int morningLoad = 30, int middayLoad = 15)
+    private readonly GeneratorTimeOptions _times = times.Value;
+    private const string NextPackageIdKey = "NextPackageId";
+
+    public IValueGenerator<List<int>?> Get(int morningLoad = 30, int middayLoad = 15)
     {
         return new Dependent<List<int>?>((r, c) =>
         {
-            var middayTime = c.TryGet("MiddayTime", out TimeOnly midTime) ? midTime : GeneratorConstants.MiddayTime;
-            var dayStartTime = c.TryGet("DayStartTime", out TimeOnly start) ? start : GeneratorConstants.DayStartTime;
-            var dateNow = c.TryGet("TsUtc", out DateTime tsUtc) ? tsUtc : DateTime.UtcNow;
-            var nextId = c.TryGet("NextPackageId", out int nid) ? nid : 1;
-            
+            var dateNow = c.TryGet(nameof(CarEntity.TsUtc), out DateTime tsUtc) ? tsUtc : DateTime.UtcNow;
+            var nextId = c.TryGet(NextPackageIdKey, out int nid) ? nid : 1;
+
             var timeNow = TimeOnly.FromDateTime(dateNow);
-            
-            if (timeNow == dayStartTime)
+
+            if (timeNow == _times.DayStartTime)
             {
                 var addedPackages = Enumerable.Range(nextId, morningLoad).ToList();
                 nextId += morningLoad;
-                c.Set("NextPackageId", nextId);
+                c.Set(NextPackageIdKey, nextId);
                 return addedPackages;
             }
 
-            if (timeNow == middayTime)
+            if (timeNow == _times.MiddayTime)
             {
                 var addedPackages = Enumerable.Range(nextId, middayLoad).ToList();
                 nextId += middayLoad;
-                c.Set("NextPackageId", nextId);
+                c.Set(NextPackageIdKey, nextId);
                 return addedPackages;
             }
 

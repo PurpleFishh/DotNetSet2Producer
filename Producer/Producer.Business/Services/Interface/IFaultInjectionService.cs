@@ -1,4 +1,4 @@
-﻿using Producer.Infrastructure.Config;
+﻿using Producer.Business.Entity;
 
 namespace Producer.Business.Services.Interface;
 

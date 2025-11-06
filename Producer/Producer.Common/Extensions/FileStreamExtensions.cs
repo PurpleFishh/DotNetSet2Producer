@@ -1,4 +1,4 @@
-﻿namespace Producer.Infrastructure.Utils;
+﻿namespace Producer.Common.Extensions;
 
 public static class FileStreamExtensions
 {

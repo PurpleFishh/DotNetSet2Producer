@@ -5,7 +5,7 @@ namespace Generator;
 
 public class RecordBuilder<T>(Func<IReadOnlyDictionary<string, object>, T> objectMapper)
 {
-    private readonly List<(string key, Func<IRandomSource, GenerationContext, object>)> _buildSteps = [];
+    private readonly List<(string key, Func<IRandomSource, IGenerationContext, object>)> _buildSteps = [];
 
     public RecordBuilder<T> AddStep<TProp>(string key, IValueGenerator<TProp> gen)
     {
@@ -19,7 +19,7 @@ public class RecordBuilder<T>(Func<IReadOnlyDictionary<string, object>, T> objec
         return this;
     }
 
-    public T Build(IRandomSource rnd, GenerationContext? ctx = null)
+    public T Build(IRandomSource rnd, IGenerationContext? ctx = null)
     {
         ctx ??= new GenerationContext();
         var map = new Dictionary<string, object>();

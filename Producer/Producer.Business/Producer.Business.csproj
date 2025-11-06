@@ -8,11 +8,12 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.2.25502.107" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0-rc.2.25502.107" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Generator\Generator.csproj" />
-      <ProjectReference Include="..\Producer.Infrastructure\Producer.Infrastructure.csproj" />
+      <ProjectReference Include="..\Producer.Common\Producer.Common.csproj" />
     </ItemGroup>
 
 </Project>

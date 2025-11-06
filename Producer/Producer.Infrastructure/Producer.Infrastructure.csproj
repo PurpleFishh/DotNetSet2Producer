@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Generator\Generator.csproj" />
+      <ProjectReference Include="..\Producer.Business\Producer.Business.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
+using Producer.Common;
 
 namespace Producer.Business.Services.Implementation;
 
@@ -35,12 +36,12 @@ public class FileMetadataService : IFileMetadataService
             JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public Task WriteMetaDataFileForFinal(string finalPath, string version, int recordCount,
+    public Task WriteMetaDataFileForFinal(string finalPath, DataSchemas version, int recordCount,
         CompressionKind compression, string sha256AlreadyComputed)
     {
         var meta = new MetaData
         {
-            Version = version,
+            Version = version.ToString(),
             CreatedUtc = DateTime.UtcNow.ToString("o"),
             RecordCount = recordCount,
             Sha256 = sha256AlreadyComputed,
@@ -50,6 +51,6 @@ public class FileMetadataService : IFileMetadataService
 
         var metaPath = finalPath + MetadataFileExtension;
         var json = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true });
-        return File.WriteAllTextAsync(metaPath, json);
+        return File.WriteAllTextAsync(String.Join("", metaPath.Split(".tmp")), json);
     }
 }

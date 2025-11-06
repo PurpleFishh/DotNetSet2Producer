@@ -4,5 +4,5 @@ namespace Producer.Business.Services.Interface;
 
 public interface ICarTelemetryService
 {
-    public CarEntity Next();
+    public CarEntity GenerateValue();
 }
