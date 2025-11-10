@@ -1,16 +1,16 @@
 ﻿using Producer.Business.Entity;
-using Producer.Common;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Interface;
 
 public interface IFileMetadataService
 {
-    public Task<MetaData> GetFileMetaData(string filePath, string version, int recordCount,
-        CompressionKind compression);
+    public Task<FileMetaDataEntity> GetFileMetaData(string filePath, string version, int recordCount,
+        FileCompressionType fileCompression);
 
     public Task WriteMetaDataFile(string filePath, string version, int recordCount,
-        CompressionKind compression);
+        FileCompressionType fileCompression);
 
     public Task WriteMetaDataFileForFinal(string finalPath, DataSchemas version, int recordCount,
-        CompressionKind compression, string sha256AlreadyComputed);
+        FileCompressionType fileCompression, string sha256AlreadyComputed);
 }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Producer.Business.Mappers;
+using Producer.Business.Mappers.CarMapper;
 using Producer.Business.Services.Interface;
 using Producer.Common;
 

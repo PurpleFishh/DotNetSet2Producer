@@ -1,5 +1,6 @@
 ﻿using Producer.Business.Entity;
-using Producer.Common;
+using Producer.Business.Mappers.CarMapper;
+using Producer.Common.Types;
 
 namespace Producer.Business.Mappers;
 

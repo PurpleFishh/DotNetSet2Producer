@@ -2,7 +2,7 @@
 using Generator.Random;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Producer.Common;
+using Producer.Common.Types;
 using Producer.Infrastructure;
 
 namespace Producer;

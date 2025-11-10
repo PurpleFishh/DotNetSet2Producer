@@ -1,5 +1,5 @@
 ﻿using Generator.Generators;
-using Producer.Business.Entity;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Interface.Generators;
 
