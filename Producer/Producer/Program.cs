@@ -3,7 +3,6 @@ using Microsoft.Extensions.Hosting;
 using Producer;
 using Producer.Business;
 using Producer.Infrastructure;
-using Producer.Presentation.Controller;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
@@ -11,7 +10,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddVehicleContext();
         services.AddApplication();
         services.AddInfrastructure(context.Configuration);
-        services.AddScoped<CarController>();
+        services.AddScoped<CarOperations>();
         services.AddTransient<AppRunner>();
     })
     .Build();

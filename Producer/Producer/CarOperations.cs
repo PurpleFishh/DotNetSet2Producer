@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Producer.Business.Entity;
 using Producer.Business.Mappers;
-using Producer.Business.Services.Implementation;
 using Producer.Business.Services.Interface;
 using Producer.Common;
 
-namespace Producer.Presentation.Controller;
+namespace Producer;
 
-public class CarController(
+public class CarOperations(
     IFileSystemService writer,
     ICarTelemetryService telemetry,
     IServiceProvider services,

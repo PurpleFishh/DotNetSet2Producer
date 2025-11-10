@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Producer.Common;
 using Producer.Infrastructure;
-using Producer.Presentation.Controller;
 
 namespace Producer;
 
@@ -19,7 +18,7 @@ public class AppRunner(ILogger<AppRunner> log, IServiceProvider root)
         var schemaIndex = rnd.NextInt(0, schemas.Count - 1);
 
         using var vehicleScope = root.CreateVehicleScope(carId, schemas[schemaIndex]);
-        var controller = vehicleScope.ServiceProvider.GetRequiredService<CarController>();
+        var controller = vehicleScope.ServiceProvider.GetRequiredService<CarOperations>();
 
         var cts = new CancellationTokenSource();
 

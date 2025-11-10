@@ -25,7 +25,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Producer.Infrastructure\Producer.Infrastructure.csproj" />
-      <ProjectReference Include="..\Producer.Presentation\Producer.Presentation.csproj" />
     </ItemGroup>
 
 </Project>

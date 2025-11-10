@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producer", "Producer\Produc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator", "Generator\Generator.csproj", "{6843AE38-949E-4C0C-BEDB-F6F2B95F0BE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producer.Presentation", "Producer.Presentation\Producer.Presentation.csproj", "{112EBE3B-F88A-420E-A2E2-4E1098887EF4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producer.Business", "Producer.Business\Producer.Business.csproj", "{5CDC7CCA-23E1-4CC4-A4D7-71A2FE280CD5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producer.Infrastructure", "Producer.Infrastructure\Producer.Infrastructure.csproj", "{966B9A7C-079C-4D7D-953F-A4156D1030DB}"
@@ -26,10 +24,6 @@ Global
 		{6843AE38-949E-4C0C-BEDB-F6F2B95F0BE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6843AE38-949E-4C0C-BEDB-F6F2B95F0BE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6843AE38-949E-4C0C-BEDB-F6F2B95F0BE9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{112EBE3B-F88A-420E-A2E2-4E1098887EF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{112EBE3B-F88A-420E-A2E2-4E1098887EF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{112EBE3B-F88A-420E-A2E2-4E1098887EF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{112EBE3B-F88A-420E-A2E2-4E1098887EF4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5CDC7CCA-23E1-4CC4-A4D7-71A2FE280CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5CDC7CCA-23E1-4CC4-A4D7-71A2FE280CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CDC7CCA-23E1-4CC4-A4D7-71A2FE280CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
