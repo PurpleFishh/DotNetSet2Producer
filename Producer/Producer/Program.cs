@@ -1,3 +1,18 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Producer;
+using Producer.Business;
+using Producer.Infrastructure;
 
-Console.WriteLine("Hello, World!");
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((context, services) =>
+    {
+        services.AddVehicleContext();
+        services.AddApplication();
+        services.AddInfrastructure(context.Configuration);
+        services.AddScoped<CarOperations>();
+        services.AddTransient<AppRunner>();
+    })
+    .Build();
+
+await host.Services.GetRequiredService<AppRunner>().RunAsync();
