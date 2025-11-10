@@ -1,4 +1,6 @@
-﻿namespace Producer.Common;
+﻿using Producer.Common.Types;
+
+namespace Producer.Common;
 
 public class VehicleContext: IVehicleContext
 {

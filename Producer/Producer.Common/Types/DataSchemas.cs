@@ -1,4 +1,4 @@
-﻿namespace Producer.Common;
+﻿namespace Producer.Common.Types;
 
 public enum DataSchemas
 {

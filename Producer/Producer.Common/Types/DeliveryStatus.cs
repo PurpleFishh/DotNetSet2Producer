@@ -1,4 +1,4 @@
-﻿namespace Producer.Business.Entity;
+﻿namespace Producer.Common.Types;
 
 public enum DeliveryStatus
 {

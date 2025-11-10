@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
-using Producer.Common;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Implementation;
 
@@ -10,26 +10,26 @@ public class FileMetadataService : IFileMetadataService
     private const string Encoding = "utf8";
     private const string MetadataFileExtension = ".meta.json";
 
-    public async Task<MetaData> GetFileMetaData(string filePath, string version, int recordCount,
-        CompressionKind compression)
+    public async Task<FileMetaDataEntity> GetFileMetaData(string filePath, string version, int recordCount,
+        FileCompressionType fileCompression)
     {
         var sha256 = await new FileChecksum().GetChecksum(filePath);
-        var meta = new MetaData
+        var meta = new FileMetaDataEntity
         {
             Version = version,
             CreatedUtc = DateTime.UtcNow.ToString("o"),
             RecordCount = recordCount,
             Sha256 = sha256,
             Encoding = Encoding,
-            Compression = compression
+            FileCompression = fileCompression
         };
         return meta;
     }
 
     public async Task WriteMetaDataFile(string filePath, string version, int recordCount,
-        CompressionKind compression)
+        FileCompressionType fileCompression)
     {
-        var meta = await GetFileMetaData(filePath, version, recordCount, compression);
+        var meta = await GetFileMetaData(filePath, version, recordCount, fileCompression);
 
         var metaPath = filePath + MetadataFileExtension;
         await File.WriteAllTextAsync(metaPath,
@@ -37,16 +37,16 @@ public class FileMetadataService : IFileMetadataService
     }
 
     public Task WriteMetaDataFileForFinal(string finalPath, DataSchemas version, int recordCount,
-        CompressionKind compression, string sha256AlreadyComputed)
+        FileCompressionType fileCompression, string sha256AlreadyComputed)
     {
-        var meta = new MetaData
+        var meta = new FileMetaDataEntity
         {
             Version = version.ToString(),
             CreatedUtc = DateTime.UtcNow.ToString("o"),
             RecordCount = recordCount,
             Sha256 = sha256AlreadyComputed,
             Encoding = Encoding,
-            Compression = compression
+            FileCompression = fileCompression
         };
 
         var metaPath = finalPath + MetadataFileExtension;

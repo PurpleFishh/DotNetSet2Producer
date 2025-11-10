@@ -3,10 +3,10 @@ using Producer.Business.Entity;
 
 namespace Producer.Business.Mappers;
 
-public static class DtoMapper
+public static class DtoMapperExtentions
 {
     public static CarDtoV1 ToDtoV1(this CarEntity car) =>
-        new CarDtoV1(
+        new(
             VehicleId: car.VehicleId,
             TsUtc: car.TsUtc,
             DeliveryList: car.DeliveryList,
@@ -14,9 +14,8 @@ public static class DtoMapper
             DeliveryStatus: car.DeliveryStatus.ToString()
         );
 
-    public static CarDtoV2 ToDtoV2(this CarEntity car)
-    {
-        return new CarDtoV2(
+    public static CarDtoV2 ToDtoV2(this CarEntity car) =>
+        new(
             VehicleId: car.VehicleId,
             TsUtc: car.TsUtc,
             DeliveryList: car.DeliveryList,
@@ -25,5 +24,4 @@ public static class DtoMapper
             Odometer: car.Odometer,
             FuelPct: car.FuelPct
         );
-    }
 }

@@ -4,7 +4,7 @@ using Producer.Business.Services.Interface;
 using Producer.Common;
 using Producer.Common.Config;
 
-namespace Producer.Business.Services.Implementation.Backpressure;
+namespace Producer.Business.Services.Implementation;
 
 public class BackpressureService(
     IVehicleContext vehicle,

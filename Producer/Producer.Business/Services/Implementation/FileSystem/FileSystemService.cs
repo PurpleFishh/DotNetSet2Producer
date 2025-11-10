@@ -3,11 +3,11 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
 using Producer.Common;
 using Producer.Common.Config;
 using Producer.Common.Extensions;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Implementation.FileSystem;
 
@@ -55,19 +55,19 @@ public class FileSystemService : IFileSystemService
         Directory.CreateDirectory(_fsOptions.BaseFolder);
 
         var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        var ext = _fsOptions.Compression == CompressionKind.Gzip ? ".jsonl.gz" : ".jsonl";
+        var ext = _fsOptions.FileCompression == FileCompressionType.Gzip ? ".jsonl.gz" : ".jsonl";
         var fileName = $"telemetry_{ts}_{_vehicleId}{ext}";
         _tmpPath = Path.Combine(_fsOptions.BaseFolder, fileName + ".tmp");
         _finalPath = Path.Combine(_fsOptions.BaseFolder, fileName);
 
         _logger.LogInformation(
             "Opening new telemetry file. VehicleId={VehicleId} TmpPath={TmpPath} FinalPath={FinalPath} Compression={Compression} MaxRecords={MaxRecords} MaxBytes={MaxBytes} MaxAgeSeconds={MaxAgeSeconds}",
-            _vehicleId, _tmpPath, _finalPath, _fsOptions.Compression, _fsOptions.MaxRecords, _fsOptions.MaxBytes,
+            _vehicleId, _tmpPath, _finalPath, _fsOptions.FileCompression, _fsOptions.MaxRecords, _fsOptions.MaxBytes,
             _fsOptions.MaxAge.TotalSeconds);
 
         _fileStream = new FileStream(_tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024,
             useAsync: true);
-        Stream dataStream = _fsOptions.Compression == CompressionKind.Gzip
+        Stream dataStream = _fsOptions.FileCompression == FileCompressionType.Gzip
             ? new GZipStream(_fileStream, CompressionLevel.Fastest)
             : _fileStream;
 
@@ -171,7 +171,7 @@ public class FileSystemService : IFileSystemService
     {
         _logger.LogDebug("Finalizing file. TmpPath={TmpPath} FinalPath={FinalPath}", _tmpPath, _finalPath);
         var corruptionPhase = _faultInjection.GetRandomPhase();
-        if (corruptionPhase == FaultPhase.BeforeHash)
+        if (corruptionPhase == FaultPhaseType.BeforeHash)
         {
             _logger.LogWarning("Potential corruption before hash on {TmpPath}", _tmpPath);
             _faultInjection.MaybeCorruptTail(_tmpPath!);
@@ -179,15 +179,15 @@ public class FileSystemService : IFileSystemService
 
         var sha256 = await new FileChecksum().GetChecksum(_tmpPath!);
         _logger.LogDebug("Checksum computed for {TmpPath} Sha256={Sha256}", _tmpPath, sha256);
-        await _metadataService.WriteMetaDataFileForFinal(_tmpPath!, _version, _recordCount, _fsOptions.Compression,
+        await _metadataService.WriteMetaDataFileForFinal(_tmpPath!, _version, _recordCount, _fsOptions.FileCompression,
             sha256);
         File.Move(_tmpPath!, _finalPath!, overwrite: true);
         _logger.LogInformation(
             "Moved temp file to final. FinalPath={FinalPath} Records={RecordCount} Compression={Compression}",
-            _finalPath, _recordCount, _fsOptions.Compression);
+            _finalPath, _recordCount, _fsOptions.FileCompression);
         _logger.LogDebug("Metadata file written for {FinalPath}", _finalPath);
 
-        if (corruptionPhase == FaultPhase.AfterHash)
+        if (corruptionPhase == FaultPhaseType.AfterHash)
         {
             _logger.LogWarning("Potential corruption after hash on {FinalPath}", _finalPath);
             _faultInjection.MaybeCorruptTail(_finalPath!);

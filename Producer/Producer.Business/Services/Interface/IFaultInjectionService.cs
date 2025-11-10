@@ -1,10 +1,10 @@
-﻿using Producer.Business.Entity;
+﻿using Producer.Common.Types;
 
 namespace Producer.Business.Services.Interface;
 
 public interface IFaultInjectionService
 {
-    public FaultPhase GetRandomPhase();
+    public FaultPhaseType GetRandomPhase();
     public bool ShouldDropRecord();
     public void MaybeCorruptTail(string path);
 }

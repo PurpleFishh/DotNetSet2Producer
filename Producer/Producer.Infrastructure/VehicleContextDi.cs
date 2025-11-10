@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Producer.Common;
+using Producer.Common.Types;
 
 namespace Producer.Infrastructure;
 

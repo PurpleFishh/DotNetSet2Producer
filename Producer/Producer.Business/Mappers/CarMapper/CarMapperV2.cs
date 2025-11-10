@@ -1,7 +1,7 @@
 ﻿using Producer.Business.Entity;
-using Producer.Common;
+using Producer.Common.Types;
 
-namespace Producer.Business.Mappers;
+namespace Producer.Business.Mappers.CarMapper;
 
 public class CarMapperV2 : ICarMapper
 {

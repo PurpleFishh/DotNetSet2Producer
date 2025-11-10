@@ -3,6 +3,7 @@ using Generator.Generators.Helper;
 using Generator.Generators.ValueGenerator;
 using Producer.Business.Entity;
 using Producer.Business.Services.Interface.Generators;
+using Producer.Common.Types;
 
 namespace Producer.Infrastructure.Generators;
 

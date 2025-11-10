@@ -1,4 +1,6 @@
-﻿namespace Producer.Business.Entity;
+﻿using Producer.Common.Types;
+
+namespace Producer.Business.Entity;
 
 public record CarEntity(
     string VehicleId,

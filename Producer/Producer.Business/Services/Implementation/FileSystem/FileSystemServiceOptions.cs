@@ -1,12 +1,12 @@
-﻿using Producer.Business.Entity;
-using Producer.Common.Config;
+﻿using Producer.Common.Config;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Implementation.FileSystem;
 
 public class FileSystemServiceOptions
 {
     public string BaseFolder { get; private init; } = "inbox";
-    public CompressionKind Compression { get; private init; } = CompressionKind.None;
+    public FileCompressionType FileCompression { get; private init; } = FileCompressionType.None;
     public int MaxRecords { get; private init; } = 5000;
     public long MaxBytes { get; private init; } = 10 * 1024 * 1024;
     public TimeSpan MaxAge { get; private init; } = TimeSpan.FromMinutes(1);
@@ -17,7 +17,7 @@ public class FileSystemServiceOptions
     public static FileSystemServiceOptions From(ProducerOptions opt) => new()
     {
         BaseFolder = opt.Paths.BaseFolder,
-        Compression = Enum.Parse<CompressionKind>(opt.Io.Compression, true),
+        FileCompression = Enum.Parse<FileCompressionType>(opt.Io.Compression, true),
         MaxRecords = opt.RotationPolicy.MaxRecords,
         MaxBytes = opt.RotationPolicy.MaxBytes,
         MaxAge = TimeSpan.FromSeconds(opt.RotationPolicy.TimeWindowSeconds),

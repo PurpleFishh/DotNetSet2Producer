@@ -1,9 +1,7 @@
-﻿using Generator.Generators;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Producer.Business.Services.Interface.Generators;
 using Producer.Common.Config;
-using Producer.Infrastructure.Config;
 using Producer.Infrastructure.Generators;
 
 namespace Producer.Infrastructure;
@@ -37,7 +35,7 @@ public static class DependencyInjection
         services.AddSingleton<ITimestampGenerator, TimestampGenerator>();
         services.AddSingleton<IVehicleIdGenerator, VehicleIdGenerator>();
         services.AddSingleton<IWhatWasAddedGenerator, WhatWasAddedGenerator>();
-        
+
         return services;
     }
 }

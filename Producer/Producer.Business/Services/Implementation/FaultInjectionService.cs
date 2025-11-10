@@ -2,9 +2,9 @@
 using Generator.Random;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Producer.Business.Entity;
 using Producer.Business.Services.Interface;
 using Producer.Common.Config;
+using Producer.Common.Types;
 
 namespace Producer.Business.Services.Implementation;
 
@@ -14,8 +14,8 @@ public class FaultInjectionService(IOptions<FaultInjectionOptions> options, ILog
     private readonly IRandomSource _rnd = new DefaultRandomSource();
     public readonly FaultInjectionOptions Options = options.Value;
 
-    public FaultPhase GetRandomPhase()
-        => _rnd.NextInt(0, 1) == 0 ? FaultPhase.BeforeHash : FaultPhase.AfterHash;
+    public FaultPhaseType GetRandomPhase()
+        => _rnd.NextInt(0, 1) == 0 ? FaultPhaseType.BeforeHash : FaultPhaseType.AfterHash;
 
     public bool ShouldDropRecord() =>
         Options.Enabled && Options.DropRecordProb > 0 && _rnd.NextDouble() < Options.DropRecordProb;
